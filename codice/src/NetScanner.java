@@ -13,25 +13,43 @@ import java.io.*;
 import java.net.*;
 import java.lang.*;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.regex.Pattern;
 
 public class NetScanner{
 
-	private int[] ip = {0,0,0,0};
+        private static final String IPV4_REGEX =
+            "^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$";
+ 
+        private static final Pattern IPv4_PATTERN = Pattern.compile(IPV4_REGEX);
+	public int[] ip = {0,0,0,0};
 	private int[] ipF = {0,0,0,0};
-	private int[] porte;
+	public int[] porte;
+        public boolean valido;
 
-	public NetScanner(/*InetAddress addS, InetAddress addF*/){
-		String str = "10.20.4.170";
-		String[] strIp = str.split("\\.",4);
-		for(int i = 0; i<strIp.length;i++){
-			this.ip[i] = Integer.parseInt(strIp[i]);
-		}
-		String strF = "10.20.4.177";
+	public NetScanner(String addS, String addF, String porte){
+                valido = true;
+		String str = addS;
+                if(isValid(str)){
+                    String[] strIp = str.split("\\.",4);
+                    for(int i = 0; i<strIp.length;i++){
+                            this.ip[i] = Integer.parseInt(strIp[i]);
+                    }
+                }else{
+                    valido = false;
+                    System.out.print("Ip iniziale non riconosciuto, scriverlo nel formato x.x.x.x");
+                }
+		String strF = addF;
+                if(isValid(strF)){
 		String[] strIpF = strF.split("\\.",4);
-		for(int i = 0; i<strIp.length;i++){
-			this.ipF[i] = Integer.parseInt(strIpF[i]);
-		}
-		String strP = "132,135,138";
+                    for(int i = 0; i<strIpF.length;i++){
+                            this.ipF[i] = Integer.parseInt(strIpF[i]);
+                    }
+                }else{
+                    valido = false;
+                    System.out.print("Ip finale non riconosciuto, scriverlo nel formato x.x.x.x");
+                }
+		String strP = porte;
 		String[] strPS = strP.split(",");
 		this.porte = new int[strPS.length];
 		for(int i = 0; i<strPS.length;i++){
@@ -52,7 +70,7 @@ public class NetScanner{
 	public static boolean pingPort(String ip, int port){
 		try{
 			Socket socket = new Socket();
-			socket.connect(new InetSocketAddress(ip, port), 1);
+			socket.connect(new InetSocketAddress(ip, port), 6);
 			socket.close();
 			return true;
 		} catch (Exception ex) {
@@ -60,16 +78,44 @@ public class NetScanner{
 		}
 	}
 
+        public static boolean isValid(String ip)
+        {
+            if (ip == null) {
+            return false;
+        }
+ 
+        if (!IPv4_PATTERN.matcher(ip).matches())
+            return false;
+ 
+        String[] parts = ip.split("\\.");
+ 
+        // verify that each of the four subgroups of IPv4 address is legal
+        try {
+            for (String segment: parts) {
+                // x.0.x.x is accepted but x.01.x.x is not
+                if (Integer.parseInt(segment) > 255 ||
+                            (segment.length() > 1 && segment.startsWith("0"))) {
+                    return false;
+                }
+            }
+        } catch(NumberFormatException e) {
+            return false;
+        }
+ 
+        return true;
+        }
+            
 	public static int cicli(NetScanner scanner){
 		int primo = (scanner.ipF[0]-scanner.ip[0]);
 		int secondo = (scanner.ipF[1]-scanner.ip[1]);
 		int terzo = (scanner.ipF[2]-scanner.ip[2]);
 		int quarto = (scanner.ipF[3]-scanner.ip[3])+1;
-		return quarto + 255*terzo + 255*255*secondo + 255*255*255*primo;
+		return (quarto + 255*terzo + 255*255*secondo + 255*255*255*primo)*255;
 	}
 
         /*
-	public static void main(String[]args)throws UnknownHostException, IOException{
+        
+        public static void pinga(String[]args)throws UnknownHostException, IOException{
 		NetScanner scanner = new NetScanner();
 		for(int k = 0; k<cicli(scanner);k++){
 			String ipAddress = scanner.ip[0] + "."+scanner.ip[1] + "."+scanner.ip[2] + "."+scanner.ip[3]; 

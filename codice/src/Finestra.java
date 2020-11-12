@@ -1,8 +1,8 @@
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.*;
+import java.nio.file.*;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -52,6 +52,7 @@ public class Finestra extends javax.swing.JFrame implements ActionListener{
         initComponents();
         this.setVisible(true);
         this.setLayout(new BorderLayout());
+        this.setMinimumSize(new Dimension(400, 370));
         title = new JPanel(new GridLayout(0,1));
         titolo = new JLabel("Net Scanner", SwingConstants.CENTER);
         titolo.setFont(new Font("Verdana", Font.PLAIN, 30));
@@ -154,7 +155,52 @@ public class Finestra extends javax.swing.JFrame implements ActionListener{
     @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource()==this.scan){
-            
+            String ipStart = ipInizio.getText();
+            String ipEnd = ipFine.getText();
+            String port = porte.getText();
+            NetScanner scanner = new NetScanner(ipStart, ipEnd, port);
+            if(scanner.valido){
+                //if(isValid(ipStart))
+                    for(int k = 0; k<scanner.cicli(scanner);k++){
+			String ipAddress = scanner.ip[0] + "."+scanner.ip[1] + "."+scanner.ip[2] + "."+scanner.ip[3]; 
+			for(int i = 0;i<scanner.porte.length;i++){
+				if(scanner.pingPort(ipAddress,scanner.porte[i])){
+                                    if(checkA.isSelected()){
+					System.out.print(ipAddress);
+                                    }
+                                    if(checkC.isSelected()){
+                                       System.out.print(" funziona sulla porta "+scanner.porte[i]);
+                                    }
+                                    System.out.println();
+				}else{
+                                    if(checkB.isSelected()){
+					System.out.print(ipAddress);
+                                    }
+                                    if(checkD.isSelected()){
+                                       System.out.print(" non funziona sulla porta "+scanner.porte[i]);
+                                    }
+                                    System.out.println();
+				}
+			}
+			//sendPingRequest(ipAddress);
+			if(scanner.ip[3]==255){
+				scanner.ip[3] = 0;
+				if(scanner.ip[2]==255){
+					scanner.ip[2]=0;
+					if(scanner.ip[1]==255){
+						scanner.ip[1]=0;
+						scanner.ip[0]++;
+					}else{
+						scanner.ip[1]++;
+					}
+				}else{
+					scanner.ip[2]++;
+				}
+			}else{
+				scanner.ip[3]++;
+			}
+		}
+            }
         }
     }
 
