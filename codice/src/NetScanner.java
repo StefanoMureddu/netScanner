@@ -70,7 +70,7 @@ public class NetScanner{
 	public static boolean pingPort(String ip, int port){
 		try{
 			Socket socket = new Socket();
-			socket.connect(new InetSocketAddress(ip, port), 6);
+			socket.connect(new InetSocketAddress(ip, port), 100);
 			socket.close();
 			return true;
 		} catch (Exception ex) {
@@ -78,11 +78,10 @@ public class NetScanner{
 		}
 	}
 
-        public static boolean isValid(String ip)
-        {
+        public static boolean isValid(String ip){
             if (ip == null) {
-            return false;
-        }
+                return false;
+            }
  
         if (!IPv4_PATTERN.matcher(ip).matches())
             return false;
@@ -104,6 +103,30 @@ public class NetScanner{
  
         return true;
         }
+        /*
+        public static boolean isValidPort(String port){
+            if (port == null) {
+                return false;
+            }
+ 
+        String[] parts = ip.split("\\,");
+ 
+        // verify that each of the four subgroups of IPv4 address is legal
+        try {
+            for (String segment: parts) {
+                // x.0.x.x is accepted but x.01.x.x is not
+                if (Integer.parseInt(segment) > 255 ||
+                            (segment.length() > 1 && segment.startsWith("0"))) {
+                    return false;
+                }
+            }
+        } catch(NumberFormatException e) {
+            return false;
+        }
+ 
+        return true;
+        }
+        */
             
 	public static int cicli(NetScanner scanner){
 		int primo = (scanner.ipF[0]-scanner.ip[0]);

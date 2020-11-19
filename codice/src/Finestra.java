@@ -3,6 +3,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.*;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.IOException;
+import javax.swing.text.AbstractDocument;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -66,6 +74,7 @@ public class Finestra extends javax.swing.JFrame implements ActionListener{
         ipInizio = new JTextField("", SwingConstants.CENTER);
         ipFine = new JTextField("", SwingConstants.CENTER);
         porte = new JTextField("", SwingConstants.CENTER);
+        //((AbstractDocument)porte.getDocument()).setDocumentFilter(new PortFilter());
         centro.add(ipInizio);
         centro.add(ipFine);
         porteC = new JLabel("porte da considerare", SwingConstants.CENTER);
@@ -158,26 +167,37 @@ public class Finestra extends javax.swing.JFrame implements ActionListener{
             String ipStart = ipInizio.getText();
             String ipEnd = ipFine.getText();
             String port = porte.getText();
+            ipStart = ipStart.replaceAll("\\s+", "");
+            ipEnd = ipEnd.replaceAll("\\s+", "");
+            port = port.replaceAll("\\s+", "");
             NetScanner scanner = new NetScanner(ipStart, ipEnd, port);
             if(scanner.valido){
+                List<String> risultati = new ArrayList<>();
                 //if(isValid(ipStart))
                     for(int k = 0; k<scanner.cicli(scanner);k++){
 			String ipAddress = scanner.ip[0] + "."+scanner.ip[1] + "."+scanner.ip[2] + "."+scanner.ip[3]; 
 			for(int i = 0;i<scanner.porte.length;i++){
 				if(scanner.pingPort(ipAddress,scanner.porte[i])){
-                                    if(checkA.isSelected()){
-					System.out.print(ipAddress);
-                                    }
-                                    if(checkC.isSelected()){
-                                       System.out.print(" funziona sulla porta "+scanner.porte[i]);
+                                    if(checkA.isSelected()&&checkC.isSelected()){
+					System.out.print(ipAddress+" funziona sulla porta "+scanner.porte[i]);
+                                        risultati.add(ipAddress+" funziona sulla porta "+scanner.porte[i]);
+                                    }else if(checkC.isSelected()){
+                                       System.out.print("La porta "+scanner.porte[i] + " è aperta");
+                                       risultati.add(ipAddress);
+                                    }else if(checkA.isSelected()){
+                                       System.out.print("L'ip " + ipAddress + " è attivo");
+                                       risultati.add("L'ip " + ipAddress + " è attivo");
                                     }
                                     System.out.println();
 				}else{
-                                    if(checkB.isSelected()){
-					System.out.print(ipAddress);
-                                    }
-                                    if(checkD.isSelected()){
-                                       System.out.print(" non funziona sulla porta "+scanner.porte[i]);
+                                    if(checkB.isSelected()&&checkD.isSelected()){
+                                        risultati.add(ipAddress+" non funziona sulla porta "+scanner.porte[i]);
+                                    }else if(checkB.isSelected()){
+					System.out.print("L'ip " + ipAddress + " non è attivo");
+                                        risultati.add("L'ip " + ipAddress + " non è attivo");
+                                    }else if(checkD.isSelected()){
+                                       System.out.print("La porta "+scanner.porte[i] + " è chiusa");
+                                       risultati.add("La porta "+scanner.porte[i] + " è chiusa");
                                     }
                                     System.out.println();
 				}
@@ -200,6 +220,19 @@ public class Finestra extends javax.swing.JFrame implements ActionListener{
 				scanner.ip[3]++;
 			}
 		}
+                try {
+                    Path file = Paths.get("Report.txt");
+                    Files.write(file,risultati);
+                }catch (IOException ioe){
+                    System.out.println("Errore nella scrittura del file");
+                }
+            }else{
+                if(!scanner.isValid(ipStart)){
+                    ipInizio.setText("Errore, inserisci un ip valido");
+                }
+                if(!scanner.isValid(ipEnd)){
+                    ipFine.setText("Errore, inserisci un ip valido");
+                }
             }
         }
     }
