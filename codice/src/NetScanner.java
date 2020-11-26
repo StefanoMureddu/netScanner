@@ -24,7 +24,7 @@ public class NetScanner{
         private static final Pattern IPv4_PATTERN = Pattern.compile(IPV4_REGEX);
 	public int[] ip = {0,0,0,0};
 	private int[] ipF = {0,0,0,0};
-	public int[] porte;
+	public String[] porte;
         public boolean valido;
 
 	public NetScanner(String addS, String addF, String porte){
@@ -50,11 +50,15 @@ public class NetScanner{
                     System.out.print("Ip finale non riconosciuto, scriverlo nel formato x.x.x.x");
                 }
 		String strP = porte;
-		String[] strPS = strP.split(",");
-		this.porte = new int[strPS.length];
-		for(int i = 0; i<strPS.length;i++){
-			this.porte[i] = Integer.parseInt(strPS[i]);
-		}
+                if(isValidPort(strP)){
+                    String[] strPS = strP.split(",");
+                    this.porte = new String[strPS.length];
+                    for(int i = 0; i<strPS.length;i++){
+                        this.porte[i] = strPS[i];
+                    }
+                }else{
+                    valido = false;
+                }
 	}
 
 	public static void sendPingRequest(String ipAddress) throws UnknownHostException, IOException { 
@@ -83,50 +87,51 @@ public class NetScanner{
                 return false;
             }
  
-        if (!IPv4_PATTERN.matcher(ip).matches())
-            return false;
- 
-        String[] parts = ip.split("\\.");
+            if (!IPv4_PATTERN.matcher(ip).matches())
+                return false;
+
+            String[] parts = ip.split("\\.");
  
         // verify that each of the four subgroups of IPv4 address is legal
-        try {
-            for (String segment: parts) {
-                // x.0.x.x is accepted but x.01.x.x is not
-                if (Integer.parseInt(segment) > 255 ||
-                            (segment.length() > 1 && segment.startsWith("0"))) {
-                    return false;
+            try {
+                for (String segment: parts) {
+                    // x.0.x.x is accepted but x.01.x.x is not
+                    if (Integer.parseInt(segment) > 255 ||
+                                (segment.length() > 1 && segment.startsWith("0"))) {
+                        return false;
+                    }
                 }
-            }
-        } catch(NumberFormatException e) {
-            return false;
-        }
- 
-        return true;
-        }
-        /*
-        public static boolean isValidPort(String port){
-            if (port == null) {
+            } catch(NumberFormatException e) {
                 return false;
             }
- 
-        String[] parts = ip.split("\\,");
- 
-        // verify that each of the four subgroups of IPv4 address is legal
-        try {
-            for (String segment: parts) {
-                // x.0.x.x is accepted but x.01.x.x is not
-                if (Integer.parseInt(segment) > 255 ||
-                            (segment.length() > 1 && segment.startsWith("0"))) {
-                    return false;
-                }
+
+            return true;
+        }
+        public static boolean isValidPort(String port){
+            boolean valid = true;
+            if (port.matches("^[0-9,-]+$")) {
+                String[] porta = port.split(",");
+                String[][] range = new String[porta.length][2];
+                for(int i = 0; i<porta.length;i++){
+                    if(porta[i].contains("-")){
+                        range[i] = porta[i].split("-");
+                        int p = Integer.parseInt(range[i][0]);
+                        int p1 = Integer.parseInt(range[i][1]);
+                        if(!(p>0&&p<65536&&p1>0&&p1<65536)){
+                            valid = false;
+                        }
+                    }else{
+                        int p = Integer.parseInt(porta[i]);
+                        if(!(p>0&&p<65536)){
+                            valid = false;
+                        }
+                    }
+		}
+            } else {
+                valid = false;
             }
-        } catch(NumberFormatException e) {
-            return false;
+            return valid;
         }
- 
-        return true;
-        }
-        */
             
 	public static int cicli(NetScanner scanner){
 		int primo = (scanner.ipF[0]-scanner.ip[0]);
