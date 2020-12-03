@@ -1,57 +1,108 @@
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import javax.swing.*;
-import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.IOException;
-import javax.swing.text.AbstractDocument;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 /**
- *
+ * Programma che tramite un interfaccia grafica permette di pingare un range di
+ * ip su delle determinate porte.
  * @author stefano.mureddu
+ * @version 03.12.2020
  */
-public class Finestra extends javax.swing.JFrame implements ActionListener{
-    
+public class Finestra extends javax.swing.JFrame implements ActionListener,
+        PropertyChangeListener{
+
+    /**
+     * Campo di testo per inserire l'ip iniziale.
+     */
     private JTextField ipInizio;
-    
+
+    /**
+     * Campo di testo per inserire l'ip finale.
+     */
     private JTextField ipFine;
-    
+
+    /**
+     * Campo di testo per inserire le porte.
+     */
     private JTextField porte;
-    
+
+    /**
+     * Check box per decidere se vedere gli ip che hanno risposto al ping.
+     */
     private JCheckBox checkA;
-    
+
+    /**
+     * Check box per decidere se vedere gli ip che non hanno risposto al ping.
+     */
     private JCheckBox checkB;
-    
+
+    /**
+     * Check box per decidere se vedere le porte aperte pingate.
+     */
     private JCheckBox checkC;
-    
+
+    /**
+     * Check box per decidere se vedere le porte chiuse pingate.
+     */
     private JCheckBox checkD;
+
+    /**
+     * Check box per decidere se si vuole anche un file csv.
+     */
+    private JCheckBox checkE;
     
+    /**
+     * Titolo in alto.
+     */
     private JLabel titolo;
-    
+
+    /**
+     * Sottotitolo.
+     */
     private JLabel ipRange;
     
+    private JLabel fatti;
+
+    private JProgressBar progressBar;
+    /**
+     * Sottotitolo.
+     */
     private JLabel porteC;
-    
+
+    /**
+     * Pannello contenente il titolo.
+     */
     private JPanel title;
     
+    /**
+     * Pannello contenente il centro.
+     */
     private JPanel centro;
-    
+
+    /**
+     * Pannello contente la parte sotto.
+     */
     private JPanel sotto;
-    
+
+    /**
+     * Bottone per iniziare lo scan.
+     */
     private JButton scan;
-    
 
     /**
      * Creates new form Finestra
@@ -60,21 +111,22 @@ public class Finestra extends javax.swing.JFrame implements ActionListener{
         initComponents();
         this.setVisible(true);
         this.setLayout(new BorderLayout());
-        this.setMinimumSize(new Dimension(400, 370));
-        title = new JPanel(new GridLayout(0,1));
+        this.setMinimumSize(new Dimension(400, 400));
+        title = new JPanel(new GridLayout(0, 1));
         titolo = new JLabel("Net Scanner", SwingConstants.CENTER);
         titolo.setFont(new Font("Verdana", Font.PLAIN, 30));
         titolo.setForeground(Color.GREEN);
         ipRange = new JLabel("range di ip da considerare", SwingConstants.CENTER);
         ipRange.setFont(new Font("Verdana", Font.PLAIN, 18));
+        fatti = new JLabel("0", SwingConstants.CENTER);
+        fatti.setFont(new Font("Verdana", Font.PLAIN, 14));
         title.add(titolo);
         title.add(ipRange);
-        centro = new JPanel(new GridLayout(1,2));
-        sotto = new JPanel(new GridLayout(8,1));
+        centro = new JPanel(new GridLayout(1, 2));
+        sotto = new JPanel(new GridLayout(9, 1));
         ipInizio = new JTextField("", SwingConstants.CENTER);
         ipFine = new JTextField("", SwingConstants.CENTER);
         porte = new JTextField("", SwingConstants.CENTER);
-        //((AbstractDocument)porte.getDocument()).setDocumentFilter(new PortFilter());
         centro.add(ipInizio);
         centro.add(ipFine);
         porteC = new JLabel("porte da considerare", SwingConstants.CENTER);
@@ -83,9 +135,11 @@ public class Finestra extends javax.swing.JFrame implements ActionListener{
         checkB = new JCheckBox("Mostra ip non andati a buon fine");
         checkC = new JCheckBox("Mostra porte andate a buon fine");
         checkD = new JCheckBox("Mostra porte non andate a buon fine");
+        checkE = new JCheckBox("Crea un file csv");
         checkB.setHorizontalAlignment(SwingConstants.CENTER);
-        checkC.setHorizontalAlignment(SwingConstants.CENTER);                   
+        checkC.setHorizontalAlignment(SwingConstants.CENTER);
         checkD.setHorizontalAlignment(SwingConstants.CENTER);
+        checkE.setHorizontalAlignment(SwingConstants.CENTER);
         porteC.setFont(new Font("Verdana", Font.PLAIN, 18));
         scan = new JButton("scanna");
         scan.addActionListener(this);
@@ -95,7 +149,12 @@ public class Finestra extends javax.swing.JFrame implements ActionListener{
         sotto.add(checkB);
         sotto.add(checkC);
         sotto.add(checkD);
+        sotto.add(checkE);
         sotto.add(scan);
+        progressBar = new JProgressBar(0, 0);
+        progressBar.setValue(0);
+        progressBar.setStringPainted(true);
+        sotto.add(progressBar);
         this.add(title, BorderLayout.NORTH);
         this.add(centro, BorderLayout.CENTER);
         this.add(sotto, BorderLayout.SOUTH);
@@ -163,7 +222,8 @@ public class Finestra extends javax.swing.JFrame implements ActionListener{
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getSource()==this.scan){
+        if (e.getSource() == this.scan) {
+            //Prendo i dati dai form e creo un nuovo NetScanner
             String ipStart = ipInizio.getText();
             String ipEnd = ipFine.getText();
             String port = porte.getText();
@@ -171,119 +231,178 @@ public class Finestra extends javax.swing.JFrame implements ActionListener{
             ipEnd = ipEnd.replaceAll("\\s+", "");
             port = port.replaceAll("\\s+", "");
             NetScanner scanner = new NetScanner(ipStart, ipEnd, port);
-            if(scanner.valido){
+            if (scanner.valido) {
+                //se è valido creo una lista dove aggiungerò gli stati degli ip
                 List<String> risultati = new ArrayList<>();
-                //if(isValid(ipStart))
-                    for(int k = 0; k<scanner.cicli(scanner);k++){
-			String ipAddress = scanner.ip[0] + "."+scanner.ip[1] + "."+scanner.ip[2] + "."+scanner.ip[3]; 
-			for(int i = 0;i<scanner.porte.length;i++){
-                            int[] porta = new int[scanner.porte.length];
-                                if(!(scanner.porte[i].contains("-"))){
-                                    System.out.println("dentro con "+ scanner.porte[i]);
-                                    porta[i] = Integer.parseInt(scanner.porte[i]);
-                                    if(scanner.pingPort(ipAddress,porta[i])){
-                                    if(checkA.isSelected()&&checkC.isSelected()){
-					System.out.print(ipAddress+" funziona sulla porta "+porta[i]);
-                                        risultati.add(ipAddress+" funziona sulla porta "+porta[i]);
-                                    }else if(checkC.isSelected()){
-                                       System.out.print("La porta "+porta[i] + " è aperta");
-                                       risultati.add(ipAddress);
-                                    }else if(checkA.isSelected()){
-                                       System.out.print("L'ip " + ipAddress + " è attivo");
-                                       risultati.add("L'ip " + ipAddress + " è attivo");
+                List<String> risultatiCsv = new ArrayList<>();
+                int ipControllati = 0;
+                progressBar.setMaximum(scanner.cicli(scanner));
+                System.out.println(scanner.cicli(scanner));
+                setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                //Pingo tutto cio che devo
+                for (int k = 0; k < scanner.cicli(scanner); k++) {
+                    String ipAddress = scanner.ip[0] + "." + scanner.ip[1] + "."
+                            + scanner.ip[2] + "." + scanner.ip[3];
+                    boolean giaFatto=false;
+                    for (int i = 0; i < scanner.porte.length; i++) {
+                        int[] porta = new int[scanner.porte.length];
+                        //controllo se le porte sono un range o singole
+                        if (!(scanner.porte[i].contains("-"))) {
+                            porta[i] = Integer.parseInt(scanner.porte[i]);
+                            if (scanner.pingPort(ipAddress, porta[i])) {
+                                //controllo cosa scrivere sul report
+                                if (checkA.isSelected() && checkC.isSelected()){
+                                    risultati.add(ipAddress + " risponde sulla "
+                                            + "porta " + porta[i]);
+                                    risultatiCsv.add(ipAddress+","+porta[i]+
+                                            ",ON");
+                                } else if (checkC.isSelected()) {;
+                                    if(!giaFatto){
+                                        risultati.add(ipAddress);
+                                        risultatiCsv.add(ipAddress+",ON");
+                                        giaFatto=true;
                                     }
-                                    System.out.println();
-				}else{
-                                    if(checkB.isSelected()&&checkD.isSelected()){
-                                        risultati.add(ipAddress+" non funziona sulla porta "+porta[i]);
-                                    }else if(checkB.isSelected()){
-					System.out.print("L'ip " + ipAddress + " non è attivo");
-                                        risultati.add("L'ip " + ipAddress + " non è attivo");
-                                    }else if(checkD.isSelected()){
-                                       System.out.print("La porta "+porta[i] + " è chiusa");
-                                       risultati.add("La porta "+porta[i] + " è chiusa");
-                                    }
-                                    System.out.println();
-				}
-                                }else{
-                                    String[][] por = new String[scanner.porte.length][2];
-                                    por[i] = scanner.porte[i].split("-");
-                                    System.out.println(por[i][0]);
-                                    System.out.println(por[i][1]);
-                                    int p = Integer.parseInt(por[i][0]);
-                                    int p1 = Integer.parseInt(por[i][1]);
-                                    if(p>p1){
-                                        int p2 = p1;
-                                        p1 = p;
-                                        p = p2;
-                                    }
-                                    for(int o = p;o<p1;o++){
-                                        if(scanner.pingPort(ipAddress,o)){
-                                    if(checkA.isSelected()&&checkC.isSelected()){
-					System.out.print(ipAddress+" funziona sulla porta "+o);
-                                        risultati.add(ipAddress+" funziona sulla porta "+o);
-                                    }else if(checkC.isSelected()){
-                                       System.out.print("La porta "+o + " è aperta");
-                                       risultati.add(ipAddress);
-                                    }else if(checkA.isSelected()){
-                                       System.out.print("L'ip " + ipAddress + " è attivo");
-                                       risultati.add("L'ip " + ipAddress + " è attivo");
-                                    }
-                                    System.out.println();
-				}else{
-                                    if(checkB.isSelected()&&checkD.isSelected()){
-                                        risultati.add(ipAddress+" non funziona sulla porta "+o);
-                                    }else if(checkB.isSelected()){
-					System.out.print("L'ip " + ipAddress + " non è attivo");
-                                        risultati.add("L'ip " + ipAddress + " non è attivo");
-                                    }else if(checkD.isSelected()){
-                                       System.out.print("La porta "+o + " è chiusa");
-                                       risultati.add("La porta "+o + " è chiusa");
-                                    }
-                                    System.out.println();
-                                    }
+                                } else if (checkA.isSelected()) {
+                                    risultati.add("L'ip " + ipAddress +
+                                            " è attivo");
+                                    risultatiCsv.add(porta[i]+",ON");
                                 }
-				
+                            } else {
+                                //controllo cosa scrivere sul report
+                                if (checkB.isSelected() && checkD.isSelected()){
+                                    risultati.add(ipAddress + " non funziona "
+                                            + "sulla porta " + porta[i]);
+                                    risultatiCsv.add(ipAddress+","+porta[i]+
+                                            ",OFF");
+                                } else if (checkB.isSelected()) {
+                                    if(!giaFatto){
+                                        risultati.add("L'ip " + ipAddress + 
+                                                " non è attivo");
+                                        risultatiCsv.add(ipAddress+",OFF");
+                                        giaFatto=true;
+                                    }
+                                } else if (checkD.isSelected()) {
+                                    risultati.add("La porta " + porta[i] + 
+                                            " è chiusa");
+                                    risultatiCsv.add(porta[i]+",OFF");
+                                }
                             }
-			}
-			//sendPingRequest(ipAddress);
-			if(scanner.ip[3]==255){
-				scanner.ip[3] = 0;
-				if(scanner.ip[2]==255){
-					scanner.ip[2]=0;
-					if(scanner.ip[1]==255){
-						scanner.ip[1]=0;
-						scanner.ip[0]++;
-					}else{
-						scanner.ip[1]++;
-					}
-				}else{
-					scanner.ip[2]++;
-				}
-			}else{
-				scanner.ip[3]++;
-			}
-		}
+                        } else {
+                            //gestisco il range di porte
+                            String[][] por=new String[scanner.porte.length][2];
+                            por[i] = scanner.porte[i].split("-");
+                            System.out.println(por[i][0]);
+                            System.out.println(por[i][1]);
+                            int p = Integer.parseInt(por[i][0]);
+                            int p1 = Integer.parseInt(por[i][1]);
+                            if (p > p1) {
+                                int p2 = p1;
+                                p1 = p;
+                                p = p2;
+                            }
+                            //pingo il range di porte
+                            for (int o = p; o < p1; o++) {
+                                //controllo cosa scrivere sul report
+                                if (scanner.pingPort(ipAddress, o)) {
+                                    if (checkA.isSelected() &&
+                                            checkC.isSelected()) {
+                                        risultati.add(ipAddress +
+                                                " funziona sulla porta " + o);
+                                        risultatiCsv.add(ipAddress+","+porta[i]+
+                                            ",ON");
+                                    } else if (checkC.isSelected()) {
+                                        if(!giaFatto){
+                                            risultati.add(ipAddress);
+                                            risultatiCsv.add(ipAddress+",ON");
+                                            giaFatto=true;
+                                        }
+                                    } else if (checkA.isSelected()) {
+                                        risultati.add("L'ip " + ipAddress + 
+                                                " è attivo");
+                                        risultatiCsv.add(porta[i]+",ON");
+                                    }
+                                    System.out.println();
+                                } else {
+                                    //controllo cosa scrivere sul report
+                                    if (checkB.isSelected() &&
+                                            checkD.isSelected()) {
+                                        risultati.add(ipAddress + " non "
+                                                + "funziona sulla porta " + o);
+                                        risultatiCsv.add(ipAddress+","+porta[i]+
+                                            ",OFF");
+                                    } else if (checkB.isSelected()) {
+                                        if(!giaFatto){
+                                            risultati.add("L'ip " + ipAddress + 
+                                                    " non è attivo");
+                                            risultatiCsv.add(ipAddress+",OFF");
+                                            giaFatto=true;
+                                        }
+                                    } else if (checkD.isSelected()) {
+                                        risultati.add("La porta " + o + 
+                                                " è chiusa");
+                                        risultatiCsv.add(porta[i]+",OFF");
+                                    }
+                                    System.out.println();
+                                }
+                            }
+                            ipControllati++;
+                        }
+                    }
+                    //passo all'ip successivo
+                    if (scanner.ip[3] == 255) {
+                        scanner.ip[3] = 0;
+                        if (scanner.ip[2] == 255) {
+                            scanner.ip[2] = 0;
+                            if (scanner.ip[1] == 255) {
+                                scanner.ip[1] = 0;
+                                scanner.ip[0]++;
+                            } else {
+                                scanner.ip[1]++;
+                            }
+                        } else {
+                            scanner.ip[2]++;
+                        }
+                    } else {
+                        scanner.ip[3]++;
+                    }
+                    progressBar.setValue(ipControllati);
+                }
                 try {
                     Path file = Paths.get("Report.txt");
-                    Files.write(file,risultati);
-                }catch (IOException ioe){
+                    Files.write(file, risultati);
+                } catch (IOException ioe) {
                     System.out.println("Errore nella scrittura del file");
                 }
-            }else{
-                if(!scanner.isValid(ipStart)){
+                if(checkE.isSelected()){
+                    try {
+                    Path filecsv = Paths.get("Report.csv");
+                    Files.write(filecsv, risultatiCsv);
+                } catch (IOException ioe) {
+                    System.out.println("Errore nella scrittura del file");
+                }
+                }
+            } else {
+                if (!scanner.isValid(ipStart)) {
                     ipInizio.setText("Errore, inserisci un ip valido");
                 }
-                if(!scanner.isValid(ipEnd)){
+                if (!scanner.isValid(ipEnd)) {
                     ipFine.setText("Errore, inserisci un ip valido");
                 }
-                if(!scanner.isValidPort(port)){
-                    porte.setText("Errore, inserisci delle porte valide separate"
-                            + " da una virgola o da - per un range");
+                if (!scanner.isValidPort(port)) {
+                    porte.setText("Errore, inserisci delle porte valide "
+                            + "separate da una virgola o da - per un range");
                 }
             }
         }
+        setCursor(null);
     }
+
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables
