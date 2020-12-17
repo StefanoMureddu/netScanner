@@ -76,9 +76,6 @@ public class Finestra extends javax.swing.JFrame implements ActionListener,
      */
     private JLabel ipRange;
     
-    private JLabel fatti;
-
-    private JProgressBar progressBar;
     /**
      * Sottotitolo.
      */
@@ -115,11 +112,9 @@ public class Finestra extends javax.swing.JFrame implements ActionListener,
         title = new JPanel(new GridLayout(0, 1));
         titolo = new JLabel("Net Scanner", SwingConstants.CENTER);
         titolo.setFont(new Font("Verdana", Font.PLAIN, 30));
-        titolo.setForeground(Color.GREEN);
+        titolo.setForeground(Color.MAGENTA);
         ipRange = new JLabel("range di ip da considerare", SwingConstants.CENTER);
         ipRange.setFont(new Font("Verdana", Font.PLAIN, 18));
-        fatti = new JLabel("0", SwingConstants.CENTER);
-        fatti.setFont(new Font("Verdana", Font.PLAIN, 14));
         title.add(titolo);
         title.add(ipRange);
         centro = new JPanel(new GridLayout(1, 2));
@@ -151,10 +146,6 @@ public class Finestra extends javax.swing.JFrame implements ActionListener,
         sotto.add(checkD);
         sotto.add(checkE);
         sotto.add(scan);
-        progressBar = new JProgressBar(0, 0);
-        progressBar.setValue(0);
-        progressBar.setStringPainted(true);
-        sotto.add(progressBar);
         this.add(title, BorderLayout.NORTH);
         this.add(centro, BorderLayout.CENTER);
         this.add(sotto, BorderLayout.SOUTH);
@@ -236,7 +227,6 @@ public class Finestra extends javax.swing.JFrame implements ActionListener,
                 List<String> risultati = new ArrayList<>();
                 List<String> risultatiCsv = new ArrayList<>();
                 int ipControllati = 0;
-                progressBar.setMaximum(scanner.cicli(scanner));
                 System.out.println(scanner.cicli(scanner));
                 setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
                 //Pingo tutto cio che devo
@@ -365,7 +355,6 @@ public class Finestra extends javax.swing.JFrame implements ActionListener,
                     } else {
                         scanner.ip[3]++;
                     }
-                    progressBar.setValue(ipControllati);
                 }
                 try {
                     Path file = Paths.get("Report.txt");
